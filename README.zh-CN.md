@@ -2,31 +2,33 @@
 
 ![Mahjong Web Table logo](./logo.png)
 
+## 🀄 让 AI 进行麻将对决？
+
+你可以使用此项目自行创建更多规则来让 AI 打麻将，内置支持北方推倒和规则可以直接使用，快让你自己的 AI 来对决吧！此项目同时支持自行编写适配器，内置 LLM 适配器，你可以自行编写适配器来运行自己的麻将模型。
+
 一个独立的麻将规则引擎、浏览器调试牌桌和 LLM 控制器测试项目。
 
 [English README](./README.md)
 
 ![调试牌桌截图](./test_1.png)
 
-## 项目内容
+## ✨ 项目内容
 
-- 确定性的四人麻将牌桌引擎。
-- 北方推倒和规则插件。
-- 浏览器调试牌桌，支持完整牌面可视化。
-- 支持 Human、Random、Debug、本地/远程 LLM 控制玩家。
-- OpenAI-compatible LLM 适配器预设，支持 OpenAI、OpenRouter、DeepSeek、Gemini、Mistral、Groq、Together AI、xAI 和本地 OpenAI-compatible 服务。
-- 可选的本地 `transformers` Qwen 服务。
-- FullLog 导出，用于查看 prompt、模型决策、牌桌状态、事件和计分记录。
+- 🎲 确定性的四人麻将牌桌引擎。
+- 🧩 北方推倒和规则插件。
+- 🖥️ 浏览器调试牌桌，支持完整牌面可视化。
+- 🤖 支持 Human、Random、Debug、本地/远程 LLM 控制玩家。
+- 🔌 OpenAI-compatible LLM 适配器预设，支持 OpenAI、OpenRouter、DeepSeek、Gemini、Mistral、Groq、Together AI、xAI 和本地 OpenAI-compatible 服务。
+- 🧠 可选的本地 `transformers` Qwen 服务。
+- 📜 FullLog 导出，用于查看 prompt、模型决策、牌桌状态、事件和计分记录。
 
-这个独立仓库不包含 MCR 国标规则，也不包含原项目的数据训练管线。
-
-## 环境要求
+## ✅ 环境要求
 
 - Python 3.11 或更新版本
 - virtualenv、conda 或其他隔离 Python 环境
 - 可选：用于本地 Qwen 推理的 GPU 或 Apple Silicon 加速
 
-## 安装
+## 📦 安装
 
 ```bash
 python -m pip install -e .
@@ -38,7 +40,7 @@ python -m pip install -e .
 python -m pip install -e '.[llm]'
 ```
 
-## 启动 Web 牌桌
+## 🚀 启动 Web 牌桌
 
 ```bash
 uvicorn mahjong_ai.web.app:app --host 127.0.0.1 --port 8765
@@ -52,7 +54,7 @@ http://127.0.0.1:8765/
 
 UI 会显示所有玩家手牌、合法动作、响应窗口、完整状态 JSON、控制器 trace 和 FullLog 导出入口。
 
-## LLM 控制器预设
+## 🤖 LLM 控制器预设
 
 每个玩家都可以在 Debug Table 的玩家二级菜单里单独配置控制器。
 
@@ -75,9 +77,9 @@ UI 会显示所有玩家手牌、合法动作、响应窗口、完整状态 JSON
 
 不要把 API Key 提交到 Git。Token 只应在本地 UI 中填写。
 
-## 启动本地 Qwen OpenAI-Compatible API
+## 🧠 启动本地 Qwen OpenAI-Compatible API
 
-模型文件不会进入 Git。可以下载到 `models/`：
+下载 Qwen 到 `models/`：
 
 ```bash
 python -c 'from huggingface_hub import snapshot_download; snapshot_download(repo_id="Qwen/Qwen3.5-2B", local_dir="models/Qwen3.5-2B")'
@@ -109,13 +111,13 @@ Token: local
 Model: qwen3.5-2b-transformers
 ```
 
-## 运行 Smoke Hand
+## 🧪 运行 Smoke Hand
 
 ```bash
 python scripts/run_table_smoke.py --seed 42
 ```
 
-## 测试
+## ✅ 测试
 
 ```bash
 python -m unittest discover -s tests
@@ -127,7 +129,7 @@ python -m unittest discover -s tests
 OK
 ```
 
-## 项目结构
+## 📁 项目结构
 
 ```text
 configs/rules/       规则 YAML 配置
@@ -137,11 +139,3 @@ tests/               引擎、规则、LLM 适配器和 Web API 测试
 logo.png             项目 logo
 test_1.png           示例 UI 截图
 ```
-
-## 注意事项
-
-- `models/`、`artifacts/`、构建产物、Python 缓存和虚拟环境都会被 Git 忽略。
-- 这个 Web 牌桌是调试优先的工具，不是隐藏信息的正式对战客户端。
-- LLM 控制器只接收 prompt builder 生成的可见信息和合法动作。
-- UI 为了开发测试，会显示所有玩家手牌。
-
