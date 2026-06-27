@@ -1,0 +1,2 @@
+"""Player-visible table observations."""
+

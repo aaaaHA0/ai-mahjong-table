@@ -1,0 +1,89 @@
+schema_version: "ruleset.config.v1"
+rule_id: "northern_tuidaohe.v1"
+ruleset_impl: "tuidaohe"
+display_name: "北方推到和基线 v1"
+status: "draft"
+canonical_name: "推到和"
+
+params:
+  players:
+    count: 4
+  tiles:
+    total_count: 136
+    include_flowers: false
+    wildcard: false
+  deal:
+    dealer_initial_tiles: 14
+    non_dealer_initial_tiles: 13
+    dealer_discards_first: true
+  wall:
+    mode: "duplicate_four_subwalls"
+    reserve_dead_wall: false
+    exhaustive_draw_condition: "active_seat_subwall_exhaustion"
+  actions:
+    allow_chi: false
+    allow_peng: true
+    allow_exposed_kong: true
+    allow_concealed_kong: true
+    allow_added_kong: true
+    allow_pass: true
+  response:
+    priority: ["win", "peng_or_kong", "pass"]
+    same_priority_resolution: "nearest_counterclockwise_from_discarder"
+    multiple_winners: true
+    pass_win_lock:
+      enabled: true
+      scope: "discard_win_until_next_draw"
+      restrict_self_draw: false
+  winning:
+    allow_self_draw: true
+    allow_discard_win: true
+    require_declared_tenpai: true
+    allow_rob_kong: true
+    rob_kong_scope: "added_kong_only"
+    minimum_fan: 0
+    enabled_patterns: ["standard_hand", "seven_pairs", "thirteen_orphans"]
+  tenpai_declaration:
+    enabled: true
+    required_before_win: true
+    lock_hand_after_declaration: true
+    allow_peng_after_declaration: false
+    allow_kong_if_waits_unchanged: true
+  scoring:
+    mode: "project_tuidaohe_v1"
+    base_discard_win: 1
+    self_draw_payment_per_opponent: 1
+    discard_win_payer: "discarder_only"
+    gang_score_enabled: true
+    gang_scores:
+      concealed_kong_each_opponent: 1
+      added_kong_each_opponent: 1
+      exposed_kong_discarder_only: 2
+    win_multiplier_cap: 32
+    pattern_multipliers:
+      pinfu: 1
+      all_triplets: 2
+      seven_pairs: 4
+      luxury_seven_pairs: 8
+      full_flush: 4
+      half_flush: 2
+      pure_straight: 2
+      big_three_dragons: 8
+      small_four_winds: 8
+      thirteen_orphans: 16
+    event_multipliers:
+      self_draw: 2
+      kong_flower: 2
+      kong_discard: 2
+      rob_kong: 2
+
+training:
+  label_rule_id: "northern_tuidaohe.v1"
+  replay_schema: "tuidaohe_replay.v1"
+  observation_version: "mahjong_obs.unassigned"
+  action_space_version: "mahjong_actions.v1"
+  rule_feature_version: "tuidaohe_features.v1"
+
+notes:
+  implementation_status: "draft_rule_details_validator"
+  docs: "docs/rules/tuidaohe_v1.md"

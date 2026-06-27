@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mahjong-web-table"
+version = "0.1.0"
+description = "Standalone Mahjong rules engine, web table, and local LLM controller UI."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.135",
+    "uvicorn>=0.30",
+    "pydantic>=2",
+]
+
+[project.optional-dependencies]
+llm = [
+    "accelerate>=1.0",
+    "huggingface_hub>=0.24",
+    "torch>=2.4",
+    "transformers>=4.45",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+mahjong_ai = [
+    "web/static/**/*",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

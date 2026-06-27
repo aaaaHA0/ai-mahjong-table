@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mahjong AI Dev Table</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script defer src="/static/app.js?v=20260627-1"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  </head>
+  <body x-data="mahjongDevTable()" x-init="init()">
+    <header class="topbar">
+      <div>
+        <h1>Mahjong AI Dev Table</h1>
+        <p>Debug-first UI. Alpine.js + /step. The browser renders legal actions only.</p>
+      </div>
+      <div class="status-line" x-text="statusLine()"></div>
+    </header>
+
+    <main class="layout">
+      <section class="panel setup-panel">
+        <h2>Session</h2>
+        <label>
+          Rule
+          <select x-model="selectedRuleId" @change="renderRuleMeta()">
+            <template x-for="rule in rules" :key="rule.rule_id">
+              <option :value="rule.rule_id" x-text="rule.rule_id"></option>
+            </template>
+          </select>
+        </label>
+        <label>
+          Seed
+          <input type="number" x-model.number="seed" />
+        </label>
+        <label>
+          Visibility
+          <input value="Full table view: all hands visible" disabled />
+        </label>
+        <button class="primary" @click="createSession()">Create Session</button>
+        <button @click="setAllControllers('llm')">Set All LLM</button>
+        <button :disabled="!sessionId" @click="refreshSnapshot()">Refresh Snapshot</button>
+        <button :disabled="!canAdvanceDraw()" @click="advance()">Advance Draw</button>
+        <button :disabled="!canAutoRun()" @click="autoRunControllers()">Auto-run Controllers</button>
+        <button :disabled="!isAutoRunning" @click="stopAutoRun()">Stop Auto-run</button>
+        <button :disabled="!canResolveNoResponse()" @click="resolveNoResponse()">Pass All Responses</button>
+        <button :disabled="!sessionId" @click="downloadFullLog()">Download FullLog</button>
+        <div class="meta auto-run-status" x-show="autoRunStatus" x-text="autoRunStatus"></div>
+        <div class="meta" x-text="ruleMeta"></div>
+        <div class="asset-credit">
+          Tile SVG: perthmahjongsoc/mahjong-tiles-svg · CC BY-SA 4.0
+        </div>
+      </section>
+
+      <section class="panel table-panel">
+        <div class="section-title">
+          <h2>Debug Table</h2>
+          <span class="badge" x-text="`phase: ${session?.phase || '-'}`"></span>
+        </div>
+        <div class="players-grid">
+          <template x-for="seat in [0, 1, 2, 3]" :key="seat">
+            <article
+              class="player-card"
+              :class="{ current: seat === state?.current_actor, decision: decisionActors().includes(seat) }"
+            >
+              <div class="player-head">
+                <h3>
+                  <span x-text="`${seatName(seat)} / ${seat}`"></span>
+                  <span
+                    class="player-reason"
+                    x-show="controllerReasonForSeat(seat)"
+                    x-text="controllerReasonForSeat(seat)"
+                  ></span>
+                </h3>
+                <span class="score" x-text="`score ${player(seat)?.score ?? 0}`"></span>
+              </div>
+              <details class="controller-menu">
+                <summary x-text="controllerSummaryLabel(seat)"></summary>
+                <label>
+                  Type
+                  <select x-model="controllers[seat].kind" @change="controllerKindChanged(seat)">
+                    <option value="human">Human</option>
+                    <option value="llm">LLM Adapter</option>
+                    <option value="model">Dedicated Model</option>
+                  </select>
+                </label>
+                <div x-show="controllers[seat].kind !== 'human'">
+                  <label>
+                    Provider
+                    <select x-model="controllers[seat].provider" @change="controllerProviderChanged(seat)">
+                      <option value="apple-fm">Apple Foundation Models CLI</option>
+                      <option value="openai">OpenAI</option>
+                      <option value="gemini">Google Gemini</option>
+                      <option value="deepseek">DeepSeek V4 Flash</option>
+                      <option value="deepseek-v4-pro">DeepSeek V4 Pro</option>
+                      <option value="openrouter">OpenRouter</option>
+                      <option value="mistral">Mistral</option>
+                      <option value="groq">Groq</option>
+                      <option value="together">Together AI</option>
+                      <option value="xai">xAI</option>
+                      <option value="local-openai">Local OpenAI-compatible</option>
+                      <option value="debug">Debug local</option>
+                    </select>
+                  </label>
+                  <label x-show="controllerNeedsHttpConfig(seat)">
+                    Base URL
+                    <input x-model="controllers[seat].base_url" placeholder="https://api.openai.com/v1" />
+                  </label>
+                  <label x-show="controllerNeedsHttpConfig(seat)">
+                    Token
+                    <input x-model="controllers[seat].token" placeholder="not executed yet" type="password" />
+                  </label>
+                  <label>
+                    Model
+                    <input x-model="controllers[seat].model_name" placeholder="system / deepseek-v4-flash / local-model" />
+                  </label>
+                </div>
+              </details>
+              <div class="player-tags">
+                <span class="tag" x-text="`concealed ${player(seat)?.concealed_count ?? 0}`"></span>
+                <span class="tag warn" x-show="player(seat)?.tenpai_declared">tenpai</span>
+                <span class="tag warn" x-show="player(seat)?.rule_state_public?.passed_win_locked">passed-win-lock</span>
+              </div>
+
+              <div class="zone" x-show="snapshot">
+                <div class="zone-label">Hand</div>
+                <div class="tiles">
+                  <template x-for="(tile, index) in handTiles(seat)" :key="`${tile}-${index}`">
+                    <span class="tile-card" :title="tile">
+                      <img class="tile-face" :src="tileAssetUrl(tile)" :alt="tile" loading="lazy" />
+                      <span class="tile-code" x-text="tile"></span>
+                    </span>
+                  </template>
+                  <template x-for="index in hiddenSlots(seat)" :key="index">
+                    <span class="tile-card hidden">?</span>
+                  </template>
+                </div>
+              </div>
+
+              <div class="zone" x-show="snapshot">
+                <div class="zone-label">Melds</div>
+                <div class="melds">
+                  <template x-for="(meld, index) in player(seat)?.melds || []" :key="index">
+                    <div class="meld">
+                      <span class="meld-kind" x-text="meld.kind"></span>
+                      <div class="meld-tiles">
+                        <template x-for="(tile, tileIndex) in meld.tile_types || []" :key="`${index}-${tile}-${tileIndex}`">
+                          <span class="tile-card mini" :title="tile">
+                            <img class="tile-face" :src="tileAssetUrl(tile)" :alt="tile" loading="lazy" />
+                            <span class="tile-code" x-text="tile"></span>
+                          </span>
+                        </template>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+
+              <div
+                class="zone player-actions-zone"
+                x-show="pendingResponse(seat) || visibleActions(seat).length > 0 || isControllerDecisionSeat(seat)"
+              >
+                <div class="zone-label">Available Actions</div>
+                <template x-if="pendingResponse(seat)">
+                  <div class="pending-action compact">
+                    <span>submitted</span>
+                    <strong x-text="actionLabel(pendingResponse(seat))"></strong>
+                  </div>
+                </template>
+                <div class="action-buttons" x-show="visibleActions(seat).length > 0 || isControllerDecisionSeat(seat)">
+                  <button
+                    class="action-button controller"
+                    x-show="isControllerDecisionSeat(seat)"
+                    @click="controllerStep(seat)"
+                    x-text="`ask ${controllerProviderLabel(seat)}`"
+                  ></button>
+                  <template x-for="(action, index) in visibleActions(seat)" :key="actionKey(seat, action, index)">
+                    <button
+                      class="action-button"
+                      :class="actionClass(action)"
+                      @click="submitStep(action)"
+                      x-text="actionLabel(action)"
+                    ></button>
+                  </template>
+                </div>
+              </div>
+            </article>
+          </template>
+        </div>
+        <div class="discard-stack" x-show="snapshot">
+          <div class="zone-label">Global Discard Stack</div>
+          <div class="tiles">
+            <template x-for="(discard, index) in discardStack()" :key="`${discard.seat}-${discard.index}-${index}`">
+              <span
+                class="tile-card discarded"
+                :title="`${seatName(discard.seat)} discard #${discard.index}${discard.claimed_by === null ? '' : ` · claimed_by=${discard.claimed_by} ${discard.claim_kind}`}`"
+              >
+                <img class="tile-face" :src="tileAssetUrl(discard.tile_type)" :alt="discard.tile_type" loading="lazy" />
+                <span class="tile-code" x-text="discard.tile_type"></span>
+                <small class="seat-mark" x-text="seatName(discard.seat)[0]"></small>
+              </span>
+            </template>
+          </div>
+        </div>
+        <div class="empty-state" x-show="!snapshot">Create a session to inspect table state.</div>
+      </section>
+
+      <section class="panel action-panel">
+        <div class="section-title">
+          <h2>Legal Actions</h2>
+          <span class="badge" x-text="`actors: ${decisionActors().join(', ') || '-'}`"></span>
+        </div>
+        <div class="response-window" x-text="responseWindowText()"></div>
+        <button
+          class="primary system-action"
+          x-show="canResolveNoResponse()"
+          @click="resolveNoResponse()"
+        >
+          Pass All Responses
+        </button>
+        <div class="legal-summary" x-show="snapshot">
+          <div class="summary-row">
+            <span>Visible action seats</span>
+            <strong x-text="actorsWithVisibleActions().map((actor) => seatName(actor)).join(', ') || '-'"></strong>
+          </div>
+          <div class="summary-row">
+            <span>Pending seats</span>
+            <strong x-text="pendingActors().map((actor) => seatName(actor)).join(', ') || '-'"></strong>
+          </div>
+          <p class="meta-note">
+            Player actions are shown inside each Debug Table card. Response windows block the table until every eligible seat submits a response.
+          </p>
+          <div class="controller-trace" x-show="controllerDecision()">
+            <div class="summary-row">
+              <span>Controller action</span>
+              <strong x-text="controllerActionText()"></strong>
+            </div>
+            <p class="controller-reason" x-text="controllerReason()"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel event-panel">
+        <div class="section-title">
+          <h2>Events</h2>
+          <span class="badge" x-text="session?.event_count || 0"></span>
+        </div>
+        <div class="event-log">
+          <template x-for="event in shownEvents()" :key="event.event_id">
+            <div
+              class="event-row"
+              x-text="`#${event.event_id} ${event.event_type} actor=${event.actor ?? '-'} ${JSON.stringify(event.payload)}`"
+            ></div>
+          </template>
+        </div>
+      </section>
+
+      <section class="panel json-panel">
+        <div class="tabs">
+          <template x-for="tab in ['step', 'state', 'full', 'legal', 'controller']" :key="tab">
+            <button
+              class="tab"
+              :class="{ active: activeJsonTab === tab }"
+              @click="activeJsonTab = tab"
+              x-text="tabLabel(tab)"
+            ></button>
+          </template>
+        </div>
+        <pre class="json-view" x-text="jsonText()"></pre>
+      </section>
+    </main>
+  </body>
+</html>
