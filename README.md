@@ -1,6 +1,8 @@
 # Mahjong Web Table
 
-![Mahjong Web Table logo](./logo.png)
+<p align="center">
+  <img src="./logo.png" alt="Mahjong Web Table logo" width="180">
+</p>
 
 ## 🀄 Let AI Battle at Mahjong?
 
@@ -139,3 +141,7 @@ tests/               Engine, rule, LLM adapter, and web API tests
 logo.png             Project logo
 test_1.png           Example UI screenshot
 ```
+
+## 📄 License
+
+MIT License. See [LICENSE](./LICENSE).

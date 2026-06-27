@@ -1,6 +1,8 @@
 # Mahjong Web Table
 
-![Mahjong Web Table logo](./logo.png)
+<p align="center">
+  <img src="./logo.png" alt="Mahjong Web Table logo" width="180">
+</p>
 
 ## 🀄 让 AI 进行麻将对决？
 
@@ -139,3 +141,7 @@ tests/               引擎、规则、LLM 适配器和 Web API 测试
 logo.png             项目 logo
 test_1.png           示例 UI 截图
 ```
+
+## 📄 开源协议
+
+本项目使用 MIT License，详见 [LICENSE](./LICENSE)。
